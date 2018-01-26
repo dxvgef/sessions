@@ -1,0 +1,35 @@
+package sessions
+
+import (
+	"time"
+
+	"github.com/go-redis/redis"
+)
+
+//session管理器
+type SessionManager struct {
+	config *Config //配置
+}
+
+//供包内部使用的管理器
+var manager *SessionManager
+
+//redis连接对象
+var redisClient *redis.Client
+
+//配置参数
+type Config struct {
+	//cookie参数
+	CookieName string        //sessionID的cookie键名
+	HttpOnly   bool          //仅用于http（无法被js读取）
+	Path       string        //sessionid的cookie作用路径
+	MaxAge     int           //最大生命周期（秒）
+	IdleTime   time.Duration //空闲生命周期
+	Secure     bool          //启用https
+	Key        string        //sessionID值加密的密钥
+	//redis参数
+	RedisAddr      string //redis地址
+	RedisDB        int    //redis数据库
+	RedisPassword  string //redis密码
+	RedisKeyPrefix string //redis键名前缀
+}

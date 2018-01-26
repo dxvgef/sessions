@@ -1,0 +1,21 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/go-redis/redis",
+			"repository": "https://github.com/go-redis/redis",
+			"vcs": "git",
+			"revision": "2c11cbf01afb690650ad9b115e2c19f521c85201",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/google/uuid",
+			"repository": "https://github.com/google/uuid",
+			"vcs": "git",
+			"revision": "dec09d789f3dba190787f8b4454c7d3c936fed9e",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}
