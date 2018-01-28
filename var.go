@@ -11,6 +11,11 @@ type SessionManager struct {
 	config *Config //配置
 }
 
+//键不存在时的错误类型
+const Nil = RedisError("redis: nil")
+
+type RedisError string
+
 //供包内部使用的管理器
 var manager *SessionManager
 
