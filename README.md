@@ -1,3 +1,4 @@
+# Sessions
 使用Golang实现的Sessions功能包，仅支持Redis存储，Redis的驱动包使用的是[go-redis/redis](https://github.com/go-redis/redis)
 
 ## 使用示例
