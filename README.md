@@ -1,6 +1,7 @@
-# 使用Golang实现的Sessions功能包，仅支持Redis存储
+使用Golang实现的Sessions功能包，仅支持Redis存储，Redis的驱动包使用的是[go-redis/redis](https://github.com/go-redis/redis)
 
-##使用示例
+## 使用示例
+此示例的HTTP框架使用的是[HTTP Dispatcher](https://github.com/dxvgef/httpdispatcher)，也可以和更多框架整合
 ```Go
 package main
 
