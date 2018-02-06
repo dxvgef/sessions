@@ -3,7 +3,6 @@ package sessions
 import (
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 //session对象
@@ -13,453 +12,212 @@ type sessionObject struct {
 	resp http.ResponseWriter
 }
 
+type Value struct {
+	Key   string
+	Value string
+	Error error
+}
+
 //设置一个键值，如果键名存在则覆盖
-func (this *sessionObject) Set(key string, value interface{}) error {
-	return redisClient.HSet(this.ID, key, value).Err()
+func (obj *sessionObject) Set(key string, value interface{}) error {
+	return redisClient.HSet(obj.ID, key, value).Err()
 }
 
-func (this *sessionObject) GetString(key string) (string, error) {
-	return redisClient.HGet(this.ID, key).Result()
-}
-
-func (this *sessionObject) GetMustString(key string, val string) string {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return str
-	}
-	return val
-}
-
-func (this *sessionObject) GetStrings(key string, sep string) ([]string, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	return strings.Split(str, sep), nil
-}
-
-func (this *sessionObject) GetMustStrings(key string, sep string, val []string) []string {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	return strings.Split(str, sep)
-}
-
-func (this *sessionObject) GetInt8(key string) (int8, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.ParseInt(str, 10, 8)
+//读取参数值
+func (obj *sessionObject) Get(key string) *Value {
+	var result Value
+	result.Key = key
+	value, err := redisClient.HGet(obj.ID, key).Result()
 	if err != nil {
-		return 0, err
+		result.Error = err
+		return &result
 	}
-	return int8(i), nil
+	result.Value = value
+	return &result
 }
-func (this *sessionObject) GetMustInt8(key string, val int8) int8 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
+
+//将值转为string类型
+func (v *Value) String() (string, error) {
+	if v.Error != nil {
+		return "", v.Error
 	}
-	i, err := strconv.ParseInt(str, 10, 8)
-	if err != nil {
-		return val
-	}
-	return int8(i)
+	return v.Value, nil
 }
-func (this *sessionObject) GetInt8s(key string, sep string) ([]int8, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []int8
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 8)
-		if err != nil {
-			return nil, err
+
+//将值转为int类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Int(def ...int) (int, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, int8(i))
 	}
-
-	return a, nil
-}
-func (this *sessionObject) GetMustInt8s(key string, sep string, val []int8) []int8 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []int8
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 8)
-		if err != nil {
-			return val
+	value, err := strconv.Atoi(v.Value)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, int8(i))
 	}
-
-	return a
+	return value, nil
 }
 
-func (this *sessionObject) GetUint8(key string) (uint8, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.ParseUint(str, 10, 8)
-	if err != nil {
-		return 0, err
-	}
-	return uint8(i), nil
-}
-func (this *sessionObject) GetMustUint8(key string, val uint8) uint8 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	i, err := strconv.ParseUint(str, 10, 8)
-	if err != nil {
-		return val
-	}
-	return uint8(i)
-}
-func (this *sessionObject) GetUint8s(key string, sep string) ([]uint8, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []uint8
-	for k := range value {
-		i, err := strconv.ParseUint(value[k], 10, 8)
-		if err != nil {
-			return nil, err
+//将参数值转为int32类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Int32(def ...int32) (int32, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, uint8(i))
 	}
-
-	return a, nil
-}
-func (this *sessionObject) GetMustUint8s(key string, sep string, val []uint8) []uint8 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []uint8
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 8)
-		if err != nil {
-			return val
+	value, err := strconv.ParseInt(v.Value, 10, 32)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, uint8(i))
 	}
-
-	return a
+	return int32(value), nil
 }
 
-func (this *sessionObject) GetInt16(key string) (int16, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.ParseInt(str, 10, 16)
-	if err != nil {
-		return 0, err
-	}
-	return int16(i), nil
-}
-func (this *sessionObject) GetMustInt16(key string, val int16) int16 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	i, err := strconv.ParseInt(str, 10, 16)
-	if err != nil {
-		return val
-	}
-	return int16(i)
-}
-func (this *sessionObject) GetInt16s(key string, sep string) ([]int16, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []int16
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 16)
-		if err != nil {
-			return nil, err
+//将参数值转为int64类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Int64(def ...int64) (int64, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, int16(i))
 	}
-
-	return a, nil
-}
-func (this *sessionObject) GetMustInt16s(key string, sep string, val []uint16) []uint16 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []uint16
-	for k := range value {
-		i, err := strconv.ParseUint(value[k], 10, 16)
-		if err != nil {
-			return val
+	value, err := strconv.ParseInt(v.Value, 10, 64)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, uint16(i))
 	}
-
-	return a
+	return value, nil
 }
 
-func (this *sessionObject) GetUint16(key string) (uint16, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.ParseUint(str, 10, 16)
-	if err != nil {
-		return 0, err
-	}
-	return uint16(i), nil
-}
-func (this *sessionObject) GetMustUint16(key string, val uint16) uint16 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	i, err := strconv.ParseUint(str, 10, 16)
-	if err != nil {
-		return val
-	}
-	return uint16(i)
-}
-func (this *sessionObject) GetUint16s(key string, sep string) ([]uint16, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []uint16
-	for k := range value {
-		i, err := strconv.ParseUint(value[k], 10, 16)
-		if err != nil {
-			return nil, err
+//将参数值转为uint32类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Uint32(def ...uint32) (uint32, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, uint16(i))
 	}
-
-	return a, nil
-}
-func (this *sessionObject) GetMustUint16s(key string, sep string, val []uint16) []uint16 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []uint16
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 16)
-		if err != nil {
-			return val
+	value, err := strconv.ParseUint(v.Value, 10, 32)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, uint16(i))
 	}
-
-	return a
+	return uint32(value), nil
 }
 
-func (this *sessionObject) GetInt(key string) (int, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.Atoi(str)
-	if err != nil {
-		return 0, err
-	}
-	return i, nil
-}
-func (this *sessionObject) GetMustInt(key string, val int) int {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	i, err := strconv.Atoi(str)
-	if err != nil {
-		return val
-	}
-	return i
-}
-
-func (this *sessionObject) GetInts(key string, sep string) ([]int, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []int
-	for k := range value {
-		i, err := strconv.Atoi(value[k])
-		if err != nil {
-			return nil, err
+//将参数值转为uint64类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Uint64(def ...uint64) (uint64, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, i)
 	}
-
-	return a, nil
-}
-
-func (this *sessionObject) GetMustInts(key string, sep string, val []int) []int {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []int
-	for k := range value {
-		i, err := strconv.Atoi(value[k])
-		if err != nil {
-			return val
+	value, err := strconv.ParseUint(v.Value, 10, 64)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, i)
 	}
-
-	return a
+	return value, nil
 }
 
-func (this *sessionObject) GetInt64(key string) (int64, error) {
-	return redisClient.HGet(this.ID, key).Int64()
-}
-
-func (this *sessionObject) GetMustInt64(key string, val int64) int64 {
-	value, err := redisClient.HGet(this.ID, key).Int64()
-	if err == nil {
-		return value
-	}
-	return val
-}
-func (this *sessionObject) GetInt64s(key string, sep string) ([]int64, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return nil, err
-	}
-	value := strings.Split(str, sep)
-	var a []int64
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 64)
-		if err != nil {
-			return nil, err
+//将参数值转为float32类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Float32(def ...float32) (float32, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
 		}
-		a = append(a, i)
 	}
-
-	return a, nil
-}
-func (this *sessionObject) GetMustInt64s(key string, sep string, val []int64) []int64 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
-	}
-	value := strings.Split(str, sep)
-	var a []int64
-	for k := range value {
-		i, err := strconv.ParseInt(value[k], 10, 64)
-		if err != nil {
-			return val
+	value, err := strconv.ParseFloat(v.Value, 32)
+	if err != nil {
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
 		}
-		a = append(a, i)
 	}
-
-	return a
+	return float32(value), nil
 }
 
-func (this *sessionObject) GetUint64(key string) (uint64, error) {
-	return redisClient.HGet(this.ID, key).Uint64()
-}
-
-func (this *sessionObject) GetMustUint64(key string, val uint64) uint64 {
-	value, err := redisClient.HGet(this.ID, key).Uint64()
-	if err == nil {
-		return value
+//将参数值转为float64类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Float64(def ...float64) (float64, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return 0, v.Error
+		} else {
+			return def[0], nil
+		}
 	}
-	return val
-}
-
-func (this *sessionObject) GetFloat32(key string) (float32, error) {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return 0, err
-	}
-	i, err := strconv.ParseFloat(str, 32)
+	value, err := strconv.ParseFloat(v.Value, 64)
 	if err != nil {
-		return 0, err
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return 0, err
+		}
 	}
-	return float32(i), nil
+	return value, nil
 }
 
-func (this *sessionObject) GetMustFloat32(key string, val float32) float32 {
-	str, err := redisClient.HGet(this.ID, key).Result()
-	if err == nil {
-		return val
+//将参数值转为bool类型
+//如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
+func (v *Value) Bool(def ...bool) (bool, error) {
+	defLen := len(def)
+	if v.Error != nil {
+		if defLen == 0 {
+			return false, v.Error
+		} else {
+			return def[0], nil
+		}
 	}
-	i, err := strconv.ParseFloat(str, 32)
+	value, err := strconv.ParseBool(v.Value)
 	if err != nil {
-		return val
+		if defLen > 0 {
+			return def[0], nil
+		} else {
+			return false, err
+		}
 	}
-	return float32(i)
-}
-
-func (this *sessionObject) GetFloat64(key string) (float64, error) {
-	return redisClient.HGet(this.ID, key).Float64()
-}
-
-func (this *sessionObject) GetMustFloat64(key string, val float64) float64 {
-	value, err := redisClient.HGet(this.ID, key).Float64()
-	if err == nil {
-		return value
-	}
-	return val
-}
-
-func (this *sessionObject) GetBytes(key string) ([]byte, error) {
-	return redisClient.HGet(this.ID, key).Bytes()
-}
-
-func (this *sessionObject) GetMustBytes(key string, val []byte) []byte {
-	value, err := redisClient.HGet(this.ID, key).Bytes()
-	if err == nil {
-		return value
-	}
-	return val
-}
-
-func (this *sessionObject) GetBool(key string) (bool, error) {
-	s, err := redisClient.HGet(this.ID, "a").Result()
-	if err != nil {
-		return false, err
-	}
-	b, err := strconv.ParseBool(s)
-	if err != nil {
-		return false, err
-	}
-	return b, nil
-}
-func (this *sessionObject) GetMustBool(key string, val bool) bool {
-	s, err := redisClient.HGet(this.ID, "a").Result()
-	if err != nil {
-		return val
-	}
-	b, err := strconv.ParseBool(s)
-	if err != nil {
-		return val
-	}
-	return b
+	return value, nil
 }
 
 //删除一个键值，如果键名不存在则忽略，不会报错
