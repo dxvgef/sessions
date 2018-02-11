@@ -43,7 +43,7 @@ func main() {
 	}
 
 	//定义一个路由处理器用于写入session
-	dispatcher.Router.GET("/", func(ctx *httpdispatcher.Content) error {
+	dispatcher.Router.GET("/", func(ctx *httpdispatcher.Context) error {
 		//启用session
 		session, err := sessManager.UseSession(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
@@ -56,7 +56,7 @@ func main() {
 	})
 
 	//定义一个路由处理器用于演示sessions的其它操作
-	dispatcher.Router.GET("/test", func(ctx *httpdispatcher.Content) error {
+	dispatcher.Router.GET("/test", func(ctx *httpdispatcher.Context) error {
 		//启用session
 		session, err := sessManager.UseSession(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
