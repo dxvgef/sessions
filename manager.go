@@ -78,18 +78,11 @@ func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWrit
 		if err != nil {
 			return nil, err
 		}
-		// 使用请求客户端的域名做为sessionid的作用域名
-		var domain string
-		if this.config.Domain == "*" {
-			domain = req.Header.Get("Origin")
-		} else {
-			domain = this.config.Domain
-		}
 		// 创建一个cookie对象并赋值后写入到客户端
 		http.SetCookie(resp, &http.Cookie{
 			Name:     this.config.CookieName,
 			Value:    sidValue,
-			Domain:   domain,
+			Domain:   this.config.Domain,
 			Path:     this.config.Path,
 			Expires:  time.Now().Add(this.config.IdleTime),
 			Secure:   this.config.Secure,
