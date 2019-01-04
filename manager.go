@@ -95,6 +95,14 @@ func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWrit
 	sessObj.req = req
 	sessObj.resp = resp
 
+	// 自动更新空闲时间
+	if this.config.DisableAutoUpdateIdleTime == false {
+		err := this.UpdateIdleTime(req, resp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &sessObj, nil
 }
 
