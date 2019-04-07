@@ -1,4 +1,4 @@
-module sessions
+module github.com/dxvgef/sessions
 
 go 1.12
 
