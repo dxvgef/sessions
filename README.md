@@ -8,7 +8,7 @@
 - [x] 默认自动自动更新Session空闲时间，可禁止自动更新
 
 ## 使用示例
-此示例的HTTP框架使用的是[HTTP Dispatcher](https://github.com/dxvgef/httpdispatcher)，也可以和更多框架整合
+此示例的HTTP框架使用的是[Tsing](https://github.com/dxvgef/tsing)，也可以和更多框架整合
 ```Go
 package main
 
@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dxvgef/httpdispatcher"
+	"github.com/dxvgef/tsing"
 	"github.com/dxvgef/sessions"
 )
 
@@ -33,18 +33,10 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	// 定义一个http调度器
-	dispatcher := httpdispatcher.New()
-	// 启用500错误
-	dispatcher.EventConfig.ServerError = true
-	// 定义事件处理器
-	dispatcher.Handler.Event = func(e *httpdispatcher.Event) {
-		log.Println(e.Source)
-		log.Println(e.Message)
-	}
+	app := tsing.New()
 
 	// 定义一个路由处理器用于写入session
-	dispatcher.Router.GET("/", func(ctx *httpdispatcher.Context) error {
+	app.Router.GET("/", func(ctx tsing.Context) error {
 		// 启用session
 		session, err := sessManager.UseSession(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
@@ -57,7 +49,7 @@ func main() {
 	})
 
 	// 定义一个路由处理器用于演示sessions的其它操作
-	dispatcher.Router.GET("/test", func(ctx *httpdispatcher.Context) error {
+	app.Router.GET("/test", func(ctx tsing.Context) error {
 		// 启用session
 		session, err := sessManager.UseSession(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
@@ -97,7 +89,7 @@ func main() {
 	})
 
 	// 启动HTTP服务
-	if err := http.ListenAndServe(":8080", dispatcher); err != nil {
+	if err := http.ListenAndServe(":8080", app); err != nil {
 		log.Fatal(err.Error())
 	}
 }
@@ -109,11 +101,12 @@ func setSessManager() error {
 	sessManager, err = sessions.NewSessions(&sessions.Config{
 		CookieName:                 "sessionid",        // cookie中的sessionID名称
 		HttpOnly:                   true,               // 仅允许HTTP读取，js无法读取
+		Domain:                     "",                 // 作用域名，留空则自动获取当前域名
 		Path:                       "/",                // 作用路径
 		MaxAge:                     60 * 60,            // 最大生命周期（秒）
 		IdleTime:                   20 * time.Minute,   // 空闲超时时间
 		Secure:                     false,              // 启用HTTPS
-		DisableAutoUpdateIdleTime   false,              // 禁止自动更新空闲时间
+		DisableAutoUpdateIdleTime:  false,              // 禁止自动更新空闲时间
 		RedisAddr:                  "127.0.0.1:32771",  // Redis地址
 		RedisDB:                    0,                  // Redis数据库
 		RedisPassword:              "",                 // Redis密码
