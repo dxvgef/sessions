@@ -22,7 +22,7 @@ import (
 )
 
 // 定义session管理器
-var sessManager *sessions.SessionManager
+var sessManager sessions.SessionManager
 
 func main() {
 	log.SetFlags(log.Lshortfile)
@@ -98,7 +98,7 @@ func main() {
 func setSessManager() error {
 	var err error
 	// 创建session管理器
-	sessManager, err = sessions.NewSessions(&sessions.Config{
+	sessManager, err = sessions.NewSessions(sessions.Config{
 		CookieName:                 "sessionid",        // cookie中的sessionID名称
 		HttpOnly:                   true,               // 仅允许HTTP读取，js无法读取
 		Domain:                     "",                 // 作用域名，留空则自动获取当前域名
