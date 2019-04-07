@@ -11,20 +11,23 @@ import (
 )
 
 // 实例化一个session对象
-func NewSessions(config *Config) (*SessionManager, error) {
+func NewSessions(config Config) (SessionManager, error) {
+	// 实例化一个管理器
+	var manager SessionManager
+
 	// 判断配置是否正确
 	if config.CookieName == "" {
-		return nil, errors.New("CookieName参数值不正确")
+		return manager, errors.New("CookieName参数值不正确")
 	}
 	keyLen := len(config.Key)
 	if keyLen != 16 && keyLen != 24 && keyLen != 32 {
-		return nil, errors.New("密钥的长度必须是16、24、32个字节")
+		return manager, errors.New("密钥的长度必须是16、24、32个字节")
 	}
 	if config.RedisAddr == "" {
-		return nil, errors.New("Redis服务器地址参数值不正确")
+		return manager, errors.New("Redis服务器地址参数值不正确")
 	}
 	if config.RedisDB < 0 {
-		return nil, errors.New("Redis数据库参数值不正确")
+		return manager, errors.New("Redis数据库参数值不正确")
 	}
 
 	// 连接redis
@@ -35,19 +38,16 @@ func NewSessions(config *Config) (*SessionManager, error) {
 	})
 	err := redisClient.Ping().Err()
 	if err != nil {
-		return nil, err
+		return manager, err
 	}
 
-	// 实例化一个管理器
-	var tempManager SessionManager
 	// 将redis连接对象传入session管理器
-	tempManager.config = config
-	manager = &tempManager
-	return &tempManager, nil
+	manager.config = config
+	return manager, nil
 }
 
 // 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
-func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWriter) (*sessionObject, error) {
+func (this SessionManager) UseSession(req *http.Request, resp http.ResponseWriter) (sessionObject, error) {
 	var sessObj sessionObject
 	var cookieValid = true
 	var sidValue string
@@ -65,7 +65,7 @@ func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWrit
 		// 将cookie中的值解码
 		sid, err := decodeSID(cookieObj.Value, this.config.Key)
 		if err != nil {
-			return nil, err
+			return sessObj, err
 		}
 		// 将uuid作为sessionID赋值给session对象
 		sessObj.ID = sid
@@ -76,7 +76,7 @@ func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWrit
 		// 将uuid结合key加密成sid
 		sidValue, err = encodeByBytes(strToByte(this.config.Key), strToByte(sessObj.ID))
 		if err != nil {
-			return nil, err
+			return sessObj, err
 		}
 		// 创建一个cookie对象并赋值后写入到客户端
 		http.SetCookie(resp, &http.Cookie{
@@ -99,15 +99,15 @@ func (this *SessionManager) UseSession(req *http.Request, resp http.ResponseWrit
 	if this.config.DisableAutoUpdateIdleTime == false {
 		err := this.UpdateIdleTime(req, resp)
 		if err != nil {
-			return nil, err
+			return sessObj, err
 		}
 	}
 
-	return &sessObj, nil
+	return sessObj, nil
 }
 
 // 更新session的空闲时间
-func (this *SessionManager) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) error {
+func (this SessionManager) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) error {
 	// 从cookie中获得sessionID
 	cookieObj, _ := req.Cookie(this.config.CookieName)
 	if cookieObj == nil {
@@ -129,12 +129,12 @@ func (this *SessionManager) UpdateIdleTime(req *http.Request, resp http.Response
 	})
 
 	// 将cookie中的值解码
-	sid, err := decodeSID(cookieObj.Value, manager.config.Key)
+	sid, err := decodeSID(cookieObj.Value, this.config.Key)
 	if err != nil {
 		return err
 	}
 	// 更新redis的超时时间
-	return redisClient.ExpireAt(manager.config.RedisKeyPrefix+":"+sid, time.Now().Add(manager.config.IdleTime)).Err()
+	return redisClient.ExpireAt(this.config.RedisKeyPrefix+":"+sid, time.Now().Add(this.config.IdleTime)).Err()
 }
 
 // 解码得到sessionID
@@ -153,7 +153,7 @@ func decodeSID(hexStr, key string) (string, error) {
 }
 
 // 清除当前session的所有redis数据和cookie中的sessionID
-func (this *SessionManager) ClearAll(req *http.Request, resp http.ResponseWriter) error {
+func (this SessionManager) ClearAll(req *http.Request, resp http.ResponseWriter) error {
 	// 从cookie中获得sessionID
 	cookieObj, _ := req.Cookie(this.config.CookieName)
 	if cookieObj == nil {
@@ -162,7 +162,7 @@ func (this *SessionManager) ClearAll(req *http.Request, resp http.ResponseWriter
 		return nil
 	}
 	// 将cookie中的值解码得到sessionID
-	sid, err := decodeSID(cookieObj.Value, manager.config.Key)
+	sid, err := decodeSID(cookieObj.Value, this.config.Key)
 	if err != nil {
 		return err
 	}
