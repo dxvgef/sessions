@@ -6,20 +6,21 @@ import (
 	"github.com/go-redis/redis"
 )
 
-// session管理器
-type SessionManager struct {
+// Manager session管理器
+type Manager struct {
 	config Config // 配置
 }
 
 // 键不存在时的错误类型
 const Nil = RedisError("redis: nil")
 
+// RedisError Redis错误
 type RedisError string
 
 // redis连接对象
 var redisClient *redis.Client
 
-// 配置参数
+// Config 配置参数
 type Config struct {
 	// cookie参数
 	CookieName                string        // sessionID的cookie键名

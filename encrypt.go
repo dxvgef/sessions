@@ -52,18 +52,6 @@ func decodeByBytes(key, str []byte) (string, error) {
 	return bytesToStr(origData), nil
 }
 
-func zeroPadding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padtext := bytes.Repeat([]byte{0}, padding)
-	return append(ciphertext, padtext...)
-}
-
-func zeroUnPadding(origData []byte) []byte {
-	length := len(origData)
-	unpadding := int(origData[length-1])
-	return origData[:(length - unpadding)]
-}
-
 func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
