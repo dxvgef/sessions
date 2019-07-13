@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// 实例化一个session对象
-func NewSessions(config Config) (SessionManager, error) {
+// NewManager 根据配置实例化一个管理器
+func NewManager(config Config) (SessionManager, error) {
 	// 实例化一个管理器
 	var manager SessionManager
 
@@ -46,8 +46,8 @@ func NewSessions(config Config) (SessionManager, error) {
 	return manager, nil
 }
 
-// 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
-func (this SessionManager) UseSession(req *http.Request, resp http.ResponseWriter) (sessionObject, error) {
+// Use 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
+func (this SessionManager) Use(req *http.Request, resp http.ResponseWriter) (sessionObject, error) {
 	var sessObj sessionObject
 	var cookieValid = true
 	var sidValue string
