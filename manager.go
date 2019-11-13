@@ -11,7 +11,7 @@ import (
 )
 
 // NewManager 根据配置实例化一个管理器
-func NewManager(config Config) (Manager, error) {
+func NewManager(config *Config) (Manager, error) {
 	// 实例化一个管理器
 	var manager Manager
 
@@ -52,15 +52,15 @@ func (this Manager) Use(req *http.Request, resp http.ResponseWriter) (session, e
 	var sidValue string
 
 	// 从cookie中获得sessionID
-	cookieObj, _ := req.Cookie(this.config.CookieName)
-	if cookieObj == nil {
+	cookieObj, err := req.Cookie(this.config.CookieName)
+	if err != nil || cookieObj == nil {
 		cookieValid = false
 	} else if cookieObj.Value == "" {
 		cookieValid = false
 	}
 
 	// 如果cookie中的sessionID有效
-	if cookieValid == true {
+	if cookieValid {
 		// 将cookie中的值解码
 		sid, err := decodeSID(cookieObj.Value, this.config.Key)
 		if err != nil {
@@ -95,7 +95,7 @@ func (this Manager) Use(req *http.Request, resp http.ResponseWriter) (session, e
 	sessObj.resp = resp
 
 	// 自动更新空闲时间
-	if this.config.DisableAutoUpdateIdleTime == false {
+	if !this.config.DisableAutoUpdateIdleTime {
 		if err := this.UpdateIdleTime(req, resp); err != nil {
 			return sessObj, err
 		}
@@ -107,8 +107,8 @@ func (this Manager) Use(req *http.Request, resp http.ResponseWriter) (session, e
 // 更新session的空闲时间
 func (this Manager) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) error {
 	// 从cookie中获得sessionID
-	cookieObj, _ := req.Cookie(this.config.CookieName)
-	if cookieObj == nil {
+	cookieObj, err := req.Cookie(this.config.CookieName)
+	if err != nil || cookieObj == nil {
 		return nil
 	} else if cookieObj.Value == "" {
 		return nil
@@ -153,8 +153,8 @@ func decodeSID(hexStr, key string) (string, error) {
 // 清除当前session的所有redis数据和cookie中的sessionID
 func (this Manager) ClearAll(req *http.Request, resp http.ResponseWriter) error {
 	// 从cookie中获得sessionID
-	cookieObj, _ := req.Cookie(this.config.CookieName)
-	if cookieObj == nil {
+	cookieObj, err := req.Cookie(this.config.CookieName)
+	if err != nil || cookieObj == nil {
 		return nil
 	} else if cookieObj.Value == "" {
 		return nil

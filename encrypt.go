@@ -10,14 +10,14 @@ import (
 
 // []byte转string
 func bytesToStr(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
+	return *(*string)(unsafe.Pointer(&b)) // nolint
 }
 
 // string转[]byte
 func strToByte(s string) []byte {
-	x := (*[2]uintptr)(unsafe.Pointer(&s))
+	x := (*[2]uintptr)(unsafe.Pointer(&s)) // nolint
 	h := [3]uintptr{x[0], x[1], x[1]}
-	return *(*[]byte)(unsafe.Pointer(&h))
+	return *(*[]byte)(unsafe.Pointer(&h)) // nolint
 }
 
 // AES-128。key长度：16, 24, 32 bytes 对应 AES-128, AES-192, AES-256
