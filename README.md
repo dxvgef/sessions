@@ -36,7 +36,7 @@ func main() {
 	app := tsing.New()
 
 	// 定义一个路由处理器用于写入session
-	app.Router.GET("/", func(ctx tsing.Context) error {
+	app.Router.GET("/", func(ctx *tsing.Context) error {
 		// 启用session
 		session, err := sessManager.Use(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
@@ -49,7 +49,7 @@ func main() {
 	})
 
 	// 定义一个路由处理器用于演示sessions的其它操作
-	app.Router.GET("/test", func(ctx tsing.Context) error {
+	app.Router.GET("/test", func(ctx *tsing.Context) error {
 		// 启用session
 		session, err := sessManager.Use(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
@@ -98,7 +98,7 @@ func main() {
 func setSessManager() error {
 	var err error
 	// 创建session管理器
-	sessManager, err = sessions.NewManager(sessions.Config{
+	sessManager, err = sessions.NewManager(&sessions.Config{
 		CookieName:                 "sessionid",        // cookie中的sessionID名称
 		HttpOnly:                   true,               // 仅允许HTTP读取，js无法读取
 		Domain:                     "",                 // 作用域名，留空则自动获取当前域名
