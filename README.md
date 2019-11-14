@@ -21,14 +21,14 @@ import (
 	"github.com/dxvgef/sessions"
 )
 
-// 定义session管理器
-var sessManager sessions.SessionManager
+// 定义session引擎
+var sessEngine sessions.Engine
 
 func main() {
 	log.SetFlags(log.Lshortfile)
 
-	// 设置session管理器
-	err := setSessManager()
+	// 设置session引擎
+	err := setSessEngine()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -38,7 +38,7 @@ func main() {
 	// 定义一个路由处理器用于写入session
 	app.Router.GET("/", func(ctx *tsing.Context) error {
 		// 启用session
-		session, err := sessManager.Use(ctx.Request, ctx.ResponseWriter)
+		session, err := sessEngine.Use(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
 			log.Println(err.Error())
 			return err
@@ -51,7 +51,7 @@ func main() {
 	// 定义一个路由处理器用于演示sessions的其它操作
 	app.Router.GET("/test", func(ctx *tsing.Context) error {
 		// 启用session
-		session, err := sessManager.Use(ctx.Request, ctx.ResponseWriter)
+		session, err := sessEngine.Use(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
 			log.Println(err.Error())
 			return err
@@ -80,7 +80,7 @@ func main() {
 		}
 		// 清除session数据以及cookie中的sessionID
 		// 下次请求时会重新生成新的sessionID
-		err = sessManager.ClearAll(ctx.Request, ctx.ResponseWriter)
+		err = sessEngine.ClearAll(ctx.Request, ctx.ResponseWriter)
 		if err != nil {
 			log.Println(err.Error())
 			return err
@@ -94,11 +94,11 @@ func main() {
 	}
 }
 
-// 设置sessionManager
-func setSessManager() error {
+// 设置session引擎
+func setSessEngine() error {
 	var err error
-	// 创建session管理器
-	sessManager, err = sessions.NewManager(&sessions.Config{
+	// 创建session引擎
+	sessEngine, err = sessions.NewEngine(&sessions.Config{
 		CookieName:                 "sessionid",        // cookie中的sessionID名称
 		HttpOnly:                   true,               // 仅允许HTTP读取，js无法读取
 		Domain:                     "",                 // 作用域名，留空则自动获取当前域名

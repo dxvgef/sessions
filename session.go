@@ -5,26 +5,27 @@ import (
 	"strconv"
 )
 
-type session struct {
+// session对象
+type Session struct {
 	ID   string
 	req  *http.Request
 	resp http.ResponseWriter
 }
 
-// Value session值
+// session值
 type Value struct {
 	Key   string
 	Value string
 	Error error
 }
 
-// Set 设置一个键值，如果键名存在则覆盖
-func (obj session) Set(key string, value interface{}) error {
+// 设置一个键值，如果键名存在则覆盖
+func (obj *Session) Set(key string, value interface{}) error {
 	return redisClient.HSet(obj.ID, key, value).Err()
 }
 
 // Get 读取参数值
-func (obj session) Get(key string) Value {
+func (obj *Session) Get(key string) Value {
 	var result Value
 	result.Key = key
 	value, err := redisClient.HGet(obj.ID, key).Result()
@@ -37,7 +38,7 @@ func (obj session) Get(key string) Value {
 }
 
 // String 将值转为string类型
-func (v Value) String() (string, error) {
+func (v *Value) String() (string, error) {
 	if v.Error != nil {
 		return "", v.Error
 	}
@@ -45,7 +46,7 @@ func (v Value) String() (string, error) {
 }
 
 // Int 将值转为int类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Int(def ...int) (int, error) {
+func (v *Value) Int(def ...int) (int, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -64,7 +65,7 @@ func (v Value) Int(def ...int) (int, error) {
 }
 
 // Int32 将参数值转为int32类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Int32(def ...int32) (int32, error) {
+func (v *Value) Int32(def ...int32) (int32, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -83,7 +84,7 @@ func (v Value) Int32(def ...int32) (int32, error) {
 }
 
 // Int64 将参数值转为int64类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Int64(def ...int64) (int64, error) {
+func (v *Value) Int64(def ...int64) (int64, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -102,7 +103,7 @@ func (v Value) Int64(def ...int64) (int64, error) {
 }
 
 // Uint32 将参数值转为uint32类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Uint32(def ...uint32) (uint32, error) {
+func (v *Value) Uint32(def ...uint32) (uint32, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -121,7 +122,7 @@ func (v Value) Uint32(def ...uint32) (uint32, error) {
 }
 
 // Uint64 将参数值转为uint64类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Uint64(def ...uint64) (uint64, error) {
+func (v *Value) Uint64(def ...uint64) (uint64, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -140,7 +141,7 @@ func (v Value) Uint64(def ...uint64) (uint64, error) {
 }
 
 // Float32 将参数值转为float32类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Float32(def ...float32) (float32, error) {
+func (v *Value) Float32(def ...float32) (float32, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -159,7 +160,7 @@ func (v Value) Float32(def ...float32) (float32, error) {
 }
 
 // Float64 将参数值转为float64类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Float64(def ...float64) (float64, error) {
+func (v *Value) Float64(def ...float64) (float64, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -178,7 +179,7 @@ func (v Value) Float64(def ...float64) (float64, error) {
 }
 
 // Bool 将参数值转为bool类型，如果传入了def参数值，在转换出错时返回def，并且第二个出参永远为nil
-func (v Value) Bool(def ...bool) (bool, error) {
+func (v *Value) Bool(def ...bool) (bool, error) {
 	defLen := len(def)
 	if v.Error != nil {
 		if defLen == 0 {
@@ -197,11 +198,11 @@ func (v Value) Bool(def ...bool) (bool, error) {
 }
 
 // Delete 删除一个键值，如果键名不存在则忽略，不会报错
-func (this session) Delete(key string) error {
+func (this *Session) Delete(key string) error {
 	return redisClient.HDel(this.ID, key).Err()
 }
 
 // ClearData 清除所有redis中的session数据，但不删除cookie中的sessionID
-func (this session) ClearData() error {
+func (this *Session) ClearData() error {
 	return redisClient.Del(this.ID).Err()
 }
