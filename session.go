@@ -25,16 +25,16 @@ func (obj *Session) Set(key string, value interface{}) error {
 }
 
 // Get 读取参数值
-func (obj *Session) Get(key string) Value {
+func (obj *Session) Get(key string) *Value {
 	var result Value
 	result.Key = key
 	value, err := redisClient.HGet(obj.ID, key).Result()
 	if err != nil {
 		result.Error = err
-		return result
+		return nil
 	}
 	result.Value = value
-	return result
+	return &result
 }
 
 // String 将值转为string类型

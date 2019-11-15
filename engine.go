@@ -75,6 +75,7 @@ func NewEngine(config *Config) (*Engine, error) {
 
 	// 将redis连接对象传入session管理器
 	engine.config = config
+
 	return &engine, nil
 }
 
