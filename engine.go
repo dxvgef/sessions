@@ -44,23 +44,23 @@ type Config struct {
 }
 
 // NewEngine 根据配置实例化一个引擎
-func NewEngine(config *Config) (Engine, error) {
+func NewEngine(config *Config) (*Engine, error) {
 	// 实例化一个管理器
 	var engine Engine
 
 	// 判断配置是否正确
 	if config.CookieName == "" {
-		return engine, errors.New("CookieName参数值不正确")
+		return nil, errors.New("CookieName参数值不正确")
 	}
 	keyLen := len(config.Key)
 	if keyLen != 16 && keyLen != 24 && keyLen != 32 {
-		return engine, errors.New("密钥的长度必须是16、24、32个字节")
+		return nil, errors.New("密钥的长度必须是16、24、32个字节")
 	}
 	if config.RedisAddr == "" {
-		return engine, errors.New("Redis服务器地址参数值不正确")
+		return nil, errors.New("Redis服务器地址参数值不正确")
 	}
 	if config.RedisDB < 0 {
-		return engine, errors.New("Redis数据库参数值不正确")
+		return nil, errors.New("Redis数据库参数值不正确")
 	}
 
 	// 连接redis
@@ -70,12 +70,12 @@ func NewEngine(config *Config) (Engine, error) {
 		Password: config.RedisPassword,
 	})
 	if err := redisClient.Ping().Err(); err != nil {
-		return engine, err
+		return nil, err
 	}
 
 	// 将redis连接对象传入session管理器
 	engine.config = config
-	return engine, nil
+	return &engine, nil
 }
 
 // Use 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
