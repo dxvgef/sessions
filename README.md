@@ -22,7 +22,7 @@ import (
 )
 
 // 定义session引擎
-var sessEngine sessions.Engine
+var sessEngine *sessions.Engine
 
 func main() {
 	log.SetFlags(log.Lshortfile)
