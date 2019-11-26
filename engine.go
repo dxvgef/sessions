@@ -15,9 +15,6 @@ type Engine struct {
 	config *Config // 配置
 }
 
-// 键不存在时的错误类型
-const Nil = RedisError("redis: nil")
-
 // RedisError Redis错误
 type RedisError string
 
