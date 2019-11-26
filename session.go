@@ -1,7 +1,6 @@
 package sessions
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -35,7 +34,6 @@ func (obj *Session) Set(key string, value interface{}) error {
 func (obj *Session) Get(key string) *Value {
 	var result Value
 	result.Key = key
-	log.Println(result)
 	value, err := redisClient.HGet(obj.ID, key).Result()
 	if err != nil {
 		result.Error = err
