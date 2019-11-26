@@ -1,8 +1,11 @@
 package sessions
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-redis/redis"
 )
 
 // session对象
@@ -12,11 +15,15 @@ type Session struct {
 	resp http.ResponseWriter
 }
 
+// 键不存在时的错误类型
+const Nil = redis.Nil
+
 // session值
 type Value struct {
 	Key   string
 	Value string
 	Error error
+	*redis.StringCmd
 }
 
 // 设置一个键值，如果键名存在则覆盖
@@ -28,10 +35,11 @@ func (obj *Session) Set(key string, value interface{}) error {
 func (obj *Session) Get(key string) *Value {
 	var result Value
 	result.Key = key
+	log.Println(result)
 	value, err := redisClient.HGet(obj.ID, key).Result()
 	if err != nil {
 		result.Error = err
-		return nil
+		return &result
 	}
 	result.Value = value
 	return &result
