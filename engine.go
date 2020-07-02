@@ -236,9 +236,8 @@ func (this *Engine) VerityID(id string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	err = redisClient.Exists(sid).Err()
-	if err != nil {
-		return false, err
+	if redisClient.Exists(sid).Val() == 0 {
+		return false, nil
 	}
 	return true, nil
 }
