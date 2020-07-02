@@ -78,22 +78,23 @@ func NewEngine(config *Config) (*Engine, error) {
 
 // Use 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
 func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
-	var sess Session
-	var cookieValid = true
-	var sidValue string
+	var (
+		sess        Session
+		cookieValid = true
+		sidValue    string
+		sid         string
+	)
 
 	// 从cookie中获得sessionID
 	cookieObj, err := req.Cookie(this.config.CookieName)
-	if err != nil || cookieObj == nil {
-		cookieValid = false
-	} else if cookieObj.Value == "" {
+	if err != nil || cookieObj == nil || cookieObj.Value == "" {
 		cookieValid = false
 	}
 
 	// 如果cookie中的sessionID有效
 	if cookieValid {
 		// 将cookie中的值解码
-		sid, err := decodeSID(cookieObj.Value, this.config.Key)
+		sid, err = decodeSID(cookieObj.Value, this.config.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -213,4 +214,31 @@ func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) erro
 
 	// 更新redis的超时时间
 	return nil
+}
+
+// VerityRequest 校验request中的session id是否有效
+func (this *Engine) VerityRequest(req *http.Request) (bool, error) {
+	// 从cookie中获得sessionID
+	cookieObj, err := req.Cookie(this.config.CookieName)
+	if err != nil || cookieObj == nil {
+		return false, nil
+	} else if cookieObj.Value == "" {
+		return false, nil
+	}
+	// 校验session id
+	return this.VerityID(cookieObj.Value)
+}
+
+// VerityID 校验session id是否有效
+func (this *Engine) VerityID(id string) (bool, error) {
+	// 将id解码
+	sid, err := decodeSID(id, this.config.Key)
+	if err != nil {
+		return false, err
+	}
+	err = redisClient.Exists(sid).Err()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
