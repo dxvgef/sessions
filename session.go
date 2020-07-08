@@ -25,11 +25,6 @@ type Value struct {
 	*redis.StringCmd
 }
 
-// 设置一个键值，如果键名存在则覆盖
-func (obj *Session) Set(key string, value interface{}) error {
-	return redisClient.HSet(obj.ID, key, value).Err()
-}
-
 // Get 读取参数值
 func (obj *Session) Get(key string) *Value {
 	var result Value
@@ -41,6 +36,11 @@ func (obj *Session) Get(key string) *Value {
 	}
 	result.Value = value
 	return &result
+}
+
+// 设置一个键值，如果键名存在则覆盖
+func (obj *Session) Set(key string, value interface{}) error {
+	return redisClient.HSet(obj.ID, key, value).Err()
 }
 
 // String 将值转为string类型
