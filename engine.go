@@ -182,7 +182,7 @@ func decodeSID(hexStr, key string) (string, error) {
 	return sid, nil
 }
 
-// 清除当前session的所有redis数据和cookie中的sessionID
+// 清除指定请求的所有会话数据，包含redis数据和cookie中的sessionID
 func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) error {
 	// 从cookie中获得sessionID
 	cookieObj, err := req.Cookie(engine.config.CookieName)
@@ -240,4 +240,60 @@ func (this *Engine) VerityID(id string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+// 获取指定ID的服务端数据
+func (engine *Engine) GetByID(id, key string) *Value {
+	var (
+		result Value
+		value  string
+	)
+	result.Key = key
+	// 将id值解码得到sessionID
+	sid, err := decodeSID(id, engine.config.Key)
+	if err != nil {
+		result.Error = err
+		return &result
+	}
+	value, err = redisClient.HGet(sid, key).Result()
+	if err != nil {
+		result.Error = err
+		return &result
+	}
+	result.Value = value
+	return &result
+}
+
+// 设置指定ID的服务端数据，如果键名存在则覆盖其值
+func (engine *Engine) SetByID(id, key string, value interface{}) error {
+	// 将id值解码得到sessionID
+	sid, err := decodeSID(id, engine.config.Key)
+	if err != nil {
+		return err
+	}
+	return redisClient.HSet(sid, key, value).Err()
+}
+
+// ClearByID 清除指定ID的所有redis中的session数据，不删除cookie中的数据，但能从服务端使会话失效
+func (engine *Engine) ClearByID(id string) error {
+	// 将id值解码得到sessionID
+	sid, err := decodeSID(id, engine.config.Key)
+	if err != nil {
+		return err
+	}
+	// 清除redis中的数据
+	if err = redisClient.Del(sid).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteByID 删除指定ID的服务端，如果键名不存在则忽略，不会报错
+func (engine *Engine) DeleteByID(id, key string) error {
+	// 将id值解码得到sessionID
+	sid, err := decodeSID(id, engine.config.Key)
+	if err != nil {
+		return err
+	}
+	return redisClient.HDel(sid, key).Err()
 }
