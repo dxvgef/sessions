@@ -3,16 +3,19 @@ package sessions
 import (
 	"encoding/hex"
 	"errors"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/go-redis/redis/v7"
-	"github.com/google/uuid"
 )
 
 // Engine session管理引擎
 type Engine struct {
-	config *Config // 配置
+	config     *Config         // 配置
+	seedIDNode *snowflake.Node // 种子ID节点
 }
 
 // RedisError Redis错误
@@ -73,6 +76,13 @@ func NewEngine(config *Config) (*Engine, error) {
 	// 将redis连接对象传入session管理器
 	engine.config = config
 
+	// 创建种子ID节点的实例
+	seedIDNode, err := newSeedIDNode()
+	if err != nil {
+		return nil, err
+	}
+	engine.seedIDNode = seedIDNode
+
 	return &engine, nil
 }
 
@@ -81,8 +91,6 @@ func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, 
 	var (
 		sess        Session
 		cookieValid = true
-		sidValue    string
-		sid         string
 	)
 
 	// 从cookie中获得sessionID
@@ -93,26 +101,28 @@ func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, 
 
 	// 如果cookie中的sessionID有效
 	if cookieValid {
-		// 将cookie中的值解码
-		sid, err = decodeSID(cookieObj.Value, this.config.Key)
+		// 将cookie中的cid解码成sid
+		sid, err := decodeSID(cookieObj.Value, this.config.Key)
 		if err != nil {
 			return nil, err
 		}
-		// 将uuid作为sessionID赋值给session对象
-		sess.ID = sid
+		sess.CookieID = cookieObj.Value
+		sess.StorageID = sid
 	} else {
-		var err error
-		// 生成一个uuid并赋值给session对象
-		sess.ID = uuid.New().String()
-		// 将uuid结合key加密成sid
-		if sidValue, err = encodeByBytes(strToByte(this.config.Key), strToByte(sess.ID)); err != nil {
+		// 如果cookies中的sessionID无效
+		// 生成种子id
+		seedID := this.seedIDNode.Generate().String() + strconv.FormatUint(uint64(rand.New(rand.NewSource(rand.Int63n(time.Now().UnixNano()))).Uint32()), 10)
+		// 用种子ID编码成cid
+		cid, err := encodeByBytes(strToByte(this.config.Key), strToByte(seedID))
+		if err != nil {
 			return nil, err
 		}
-
+		sess.CookieID = cid
+		sess.StorageID = this.config.RedisKeyPrefix + ":" + seedID
 		// 创建一个cookie对象并赋值后写入到客户端
 		http.SetCookie(resp, &http.Cookie{
 			Name:     this.config.CookieName,
-			Value:    sidValue,
+			Value:    cid,
 			Domain:   this.config.Domain,
 			Path:     this.config.Path,
 			Expires:  time.Now().Add(this.config.IdleTime),
@@ -122,34 +132,18 @@ func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, 
 		})
 	}
 
-	sess.ID = this.config.RedisKeyPrefix + ":" + sess.ID
-	sess.req = req
 	sess.resp = resp
-
-	// 自动更新空闲时间
-	if !this.config.DisableAutoUpdateIdleTime {
-		if err := this.UpdateIdleTime(req, resp); err != nil {
-			return nil, err
-		}
-	}
+	sess.engine = this
 
 	return &sess, nil
 }
 
 // 更新session的空闲时间
-func (this *Engine) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) error {
-	// 从cookie中获得sessionID
-	cookieObj, err := req.Cookie(this.config.CookieName)
-	if err != nil || cookieObj == nil {
-		return nil
-	} else if cookieObj.Value == "" {
-		return nil
-	}
-
+func (this *Engine) UpdateIdleTime(cid, sid string, resp http.ResponseWriter) error {
 	// 更新cookie的超时时间
 	http.SetCookie(resp, &http.Cookie{
 		Name:     this.config.CookieName,
-		Value:    cookieObj.Value,
+		Value:    cid,
 		Domain:   this.config.Domain,
 		Path:     this.config.Path,
 		Expires:  time.Now().Add(this.config.IdleTime),
@@ -158,13 +152,7 @@ func (this *Engine) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) 
 		HttpOnly: this.config.HttpOnly,
 	})
 
-	// 将cookie中的值解码
-	sid, err := decodeSID(cookieObj.Value, this.config.Key)
-	if err != nil {
-		return err
-	}
-	// 更新redis的超时时间
-	return redisClient.ExpireAt(this.config.RedisKeyPrefix+":"+sid, time.Now().Add(this.config.IdleTime)).Err()
+	return redisClient.ExpireAt(sid, time.Now().Add(this.config.IdleTime)).Err()
 }
 
 // 解码得到sessionID
@@ -296,4 +284,12 @@ func (engine *Engine) DeleteByID(id, key string) error {
 		return err
 	}
 	return redisClient.HDel(sid, key).Err()
+}
+
+// 设置种子ID的实例
+func newSeedIDNode() (*snowflake.Node, error) {
+	snowflake.Epoch = time.Now().Unix()
+	rand.Seed(rand.Int63n(time.Now().UnixNano()))
+	node := 0 + rand.Int63n(1023-0)
+	return snowflake.NewNode(node)
 }

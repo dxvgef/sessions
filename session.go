@@ -9,9 +9,10 @@ import (
 
 // session对象
 type Session struct {
-	ID   string
-	req  *http.Request
-	resp http.ResponseWriter
+	StorageID string // 存储器中的ID
+	CookieID  string // cookies中的ID
+	resp      http.ResponseWriter
+	engine    *Engine
 }
 
 // 键不存在时的错误类型
@@ -29,18 +30,39 @@ type Value struct {
 func (obj *Session) Get(key string) *Value {
 	var result Value
 	result.Key = key
-	value, err := redisClient.HGet(obj.ID, key).Result()
+
+	value, err := redisClient.HGet(obj.StorageID, key).Result()
 	if err != nil {
 		result.Error = err
 		return &result
 	}
 	result.Value = value
+
+	// 自动更新空闲时间
+	if !obj.engine.config.DisableAutoUpdateIdleTime {
+		if err := obj.engine.UpdateIdleTime(obj.CookieID, obj.StorageID, obj.resp); err != nil {
+			result.Error = err
+			return &result
+		}
+	}
+
 	return &result
 }
 
 // 设置一个键值，如果键名存在则覆盖
 func (obj *Session) Set(key string, value interface{}) error {
-	return redisClient.HSet(obj.ID, key, value).Err()
+	err := redisClient.HSet(obj.StorageID, key, value).Err()
+	if err != nil {
+		return err
+	}
+	// 自动更新空闲时间
+	if !obj.engine.config.DisableAutoUpdateIdleTime {
+		if err := obj.engine.UpdateIdleTime(obj.CookieID, obj.StorageID, obj.resp); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // String 将值转为string类型
@@ -205,10 +227,10 @@ func (v *Value) Bool(def ...bool) (bool, error) {
 
 // Delete 删除一个键值，如果键名不存在则忽略，不会报错
 func (this *Session) Delete(key string) error {
-	return redisClient.HDel(this.ID, key).Err()
+	return redisClient.HDel(this.StorageID, key).Err()
 }
 
 // ClearData 清除所有redis中的session数据，但不删除cookie中的sessionID
 func (this *Session) ClearData() error {
-	return redisClient.Del(this.ID).Err()
+	return redisClient.Del(this.StorageID).Err()
 }
