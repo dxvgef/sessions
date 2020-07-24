@@ -14,7 +14,7 @@ import (
 
 // Engine session管理引擎
 type Engine struct {
-	config     *Config         // 配置
+	config     Config          // 配置
 	seedIDNode *snowflake.Node // 种子ID节点
 }
 
@@ -44,7 +44,7 @@ type Config struct {
 }
 
 // NewEngine 根据配置实例化一个引擎
-func NewEngine(config *Config) (*Engine, error) {
+func NewEngine(config Config) (*Engine, error) {
 	// 实例化一个管理器
 	var engine Engine
 
@@ -87,14 +87,14 @@ func NewEngine(config *Config) (*Engine, error) {
 }
 
 // Use 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
-func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
+func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
 	var (
 		sess        Session
 		cookieValid = true
 	)
 
 	// 从cookie中获得sessionID
-	cookieObj, err := req.Cookie(this.config.CookieName)
+	cookieObj, err := req.Cookie(engine.config.CookieName)
 	if err != nil || cookieObj == nil || cookieObj.Value == "" {
 		cookieValid = false
 	}
@@ -102,61 +102,61 @@ func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, 
 	// 如果cookie中的sessionID有效
 	if cookieValid {
 		// 将cookie中的cid解码成sid
-		sid, err := decodeSID(cookieObj.Value, this.config.Key)
+		sid, err := decodeStorageID(cookieObj.Value, engine.config.Key)
 		if err != nil {
 			return nil, err
 		}
 		sess.CookieID = cookieObj.Value
-		sess.StorageID = sid
+		sess.StorageID = engine.config.RedisKeyPrefix + ":" + sid
 	} else {
 		// 如果cookies中的sessionID无效
 		// 生成种子id
-		seedID := this.seedIDNode.Generate().String() + strconv.FormatUint(uint64(rand.New(rand.NewSource(rand.Int63n(time.Now().UnixNano()))).Uint32()), 10)
+		seedID := engine.seedIDNode.Generate().String() + strconv.FormatUint(uint64(rand.New(rand.NewSource(rand.Int63n(time.Now().UnixNano()))).Uint32()), 10)
 		// 用种子ID编码成cid
-		cid, err := encodeByBytes(strToByte(this.config.Key), strToByte(seedID))
+		cid, err := encodeByBytes(strToByte(engine.config.Key), strToByte(seedID))
 		if err != nil {
 			return nil, err
 		}
 		sess.CookieID = cid
-		sess.StorageID = this.config.RedisKeyPrefix + ":" + seedID
+		sess.StorageID = engine.config.RedisKeyPrefix + ":" + seedID
 		// 创建一个cookie对象并赋值后写入到客户端
 		http.SetCookie(resp, &http.Cookie{
-			Name:     this.config.CookieName,
+			Name:     engine.config.CookieName,
 			Value:    cid,
-			Domain:   this.config.Domain,
-			Path:     this.config.Path,
-			Expires:  time.Now().Add(this.config.IdleTime),
-			Secure:   this.config.Secure,
-			MaxAge:   this.config.MaxAge,
-			HttpOnly: this.config.HttpOnly,
+			Domain:   engine.config.Domain,
+			Path:     engine.config.Path,
+			Expires:  time.Now().Add(engine.config.IdleTime),
+			Secure:   engine.config.Secure,
+			MaxAge:   engine.config.MaxAge,
+			HttpOnly: engine.config.HttpOnly,
 		})
 	}
 
 	sess.resp = resp
-	sess.engine = this
+	sess.engine = engine
 
 	return &sess, nil
 }
 
 // 更新session的空闲时间
-func (this *Engine) UpdateIdleTime(cid, sid string, resp http.ResponseWriter) error {
+func (engine *Engine) UpdateIdleTime(cid, sid string, resp http.ResponseWriter) error {
 	// 更新cookie的超时时间
 	http.SetCookie(resp, &http.Cookie{
-		Name:     this.config.CookieName,
+		Name:     engine.config.CookieName,
 		Value:    cid,
-		Domain:   this.config.Domain,
-		Path:     this.config.Path,
-		Expires:  time.Now().Add(this.config.IdleTime),
-		Secure:   this.config.Secure,
-		MaxAge:   this.config.MaxAge,
-		HttpOnly: this.config.HttpOnly,
+		Domain:   engine.config.Domain,
+		Path:     engine.config.Path,
+		Expires:  time.Now().Add(engine.config.IdleTime),
+		Secure:   engine.config.Secure,
+		MaxAge:   engine.config.MaxAge,
+		HttpOnly: engine.config.HttpOnly,
 	})
 
-	return redisClient.ExpireAt(sid, time.Now().Add(this.config.IdleTime)).Err()
+	return redisClient.ExpireAt(sid, time.Now().Add(engine.config.IdleTime)).Err()
 }
 
-// 解码得到sessionID
-func decodeSID(hexStr, key string) (string, error) {
+// 解码得到storage id
+func decodeStorageID(hexStr, key string) (string, error) {
 	b, err := hex.DecodeString(hexStr)
 	if err != nil {
 		return "", err
@@ -180,12 +180,12 @@ func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) erro
 		return nil
 	}
 	// 将cookie中的值解码得到sessionID
-	sid, err := decodeSID(cookieObj.Value, engine.config.Key)
+	sid, err := decodeStorageID(cookieObj.Value, engine.config.Key)
 	if err != nil {
 		return err
 	}
 	// 清除redis中的数据
-	if err = redisClient.Del(sid).Err(); err != nil {
+	if err = redisClient.Del(engine.config.RedisKeyPrefix + ":" + sid).Err(); err != nil {
 		return err
 	}
 	// 清除cookie
@@ -205,26 +205,26 @@ func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) erro
 }
 
 // VerityRequest 校验request中的session id是否有效
-func (this *Engine) VerityRequest(req *http.Request) (bool, error) {
+func (engine *Engine) VerityRequest(req *http.Request) (bool, error) {
 	// 从cookie中获得sessionID
-	cookieObj, err := req.Cookie(this.config.CookieName)
+	cookieObj, err := req.Cookie(engine.config.CookieName)
 	if err != nil || cookieObj == nil {
 		return false, nil
 	} else if cookieObj.Value == "" {
 		return false, nil
 	}
 	// 校验session id
-	return this.VerityID(cookieObj.Value)
+	return engine.VerityID(cookieObj.Value)
 }
 
 // VerityID 校验session id是否有效
-func (this *Engine) VerityID(id string) (bool, error) {
+func (engine *Engine) VerityID(id string) (bool, error) {
 	// 将id解码
-	sid, err := decodeSID(id, this.config.Key)
+	sid, err := decodeStorageID(id, engine.config.Key)
 	if err != nil {
 		return false, err
 	}
-	if redisClient.Exists(sid).Val() == 0 {
+	if redisClient.Exists(engine.config.RedisKeyPrefix+":"+sid).Val() == 0 {
 		return false, nil
 	}
 	return true, nil
@@ -238,12 +238,12 @@ func (engine *Engine) GetByID(id, key string) *Value {
 	)
 	result.Key = key
 	// 将id值解码得到sessionID
-	sid, err := decodeSID(id, engine.config.Key)
+	sid, err := decodeStorageID(id, engine.config.Key)
 	if err != nil {
 		result.Error = err
 		return &result
 	}
-	value, err = redisClient.HGet(sid, key).Result()
+	value, err = redisClient.HGet(engine.config.RedisKeyPrefix+":"+sid, key).Result()
 	if err != nil {
 		result.Error = err
 		return &result
@@ -255,22 +255,22 @@ func (engine *Engine) GetByID(id, key string) *Value {
 // 设置指定ID的服务端数据，如果键名存在则覆盖其值
 func (engine *Engine) SetByID(id, key string, value interface{}) error {
 	// 将id值解码得到sessionID
-	sid, err := decodeSID(id, engine.config.Key)
+	sid, err := decodeStorageID(id, engine.config.Key)
 	if err != nil {
 		return err
 	}
-	return redisClient.HSet(sid, key, value).Err()
+	return redisClient.HSet(engine.config.RedisKeyPrefix+":"+sid, key, value).Err()
 }
 
-// ClearByID 清除指定ID的所有redis中的session数据，不删除cookie中的数据，但能从服务端使会话失效
-func (engine *Engine) ClearByID(id string) error {
+// ClearDataByID 清除指定ID的所有redis中的session数据，不删除cookie中的数据，但能从服务端使会话失效
+func (engine *Engine) ClearDataByID(id string) error {
 	// 将id值解码得到sessionID
-	sid, err := decodeSID(id, engine.config.Key)
+	sid, err := decodeStorageID(id, engine.config.Key)
 	if err != nil {
 		return err
 	}
 	// 清除redis中的数据
-	if err = redisClient.Del(sid).Err(); err != nil {
+	if err = redisClient.Del(engine.config.RedisKeyPrefix + ":" + sid).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -279,11 +279,11 @@ func (engine *Engine) ClearByID(id string) error {
 // DeleteByID 删除指定ID的服务端，如果键名不存在则忽略，不会报错
 func (engine *Engine) DeleteByID(id, key string) error {
 	// 将id值解码得到sessionID
-	sid, err := decodeSID(id, engine.config.Key)
+	sid, err := decodeStorageID(id, engine.config.Key)
 	if err != nil {
 		return err
 	}
-	return redisClient.HDel(sid, key).Err()
+	return redisClient.HDel(engine.config.RedisKeyPrefix+":"+sid, key).Err()
 }
 
 // 设置种子ID的实例
