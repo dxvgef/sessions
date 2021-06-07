@@ -1,10 +1,12 @@
 package sessions
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 )
 
 // session对象
@@ -26,12 +28,28 @@ type Value struct {
 	*redis.StringCmd
 }
 
+<<<<<<< HEAD
+=======
+// 设置一个键值，如果键名存在则覆盖
+func (obj *Session) Set(key string, value interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return redisClient.HSet(ctx, obj.ID, key, value).Err()
+}
+
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 // Get 读取参数值
 func (obj *Session) Get(key string) *Value {
 	var result Value
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	result.Key = key
+<<<<<<< HEAD
 
 	value, err := redisClient.HGet(obj.StorageID, key).Result()
+=======
+	value, err := redisClient.HGet(ctx, obj.ID, key).Result()
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 	if err != nil {
 		result.Error = err
 		return &result
@@ -227,10 +245,22 @@ func (v *Value) Bool(def ...bool) (bool, error) {
 
 // Delete 删除一个键值，如果键名不存在则忽略，不会报错
 func (this *Session) Delete(key string) error {
+<<<<<<< HEAD
 	return redisClient.HDel(this.StorageID, key).Err()
+=======
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return redisClient.HDel(ctx, this.ID, key).Err()
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 }
 
 // ClearData 清除所有redis中的session数据，但不删除cookie中的sessionID
 func (this *Session) ClearData() error {
+<<<<<<< HEAD
 	return redisClient.Del(this.StorageID).Err()
+=======
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return redisClient.Del(ctx, this.ID).Err()
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 }

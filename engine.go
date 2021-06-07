@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"math/rand"
@@ -8,8 +9,13 @@ import (
 	"strconv"
 	"time"
 
+<<<<<<< HEAD
 	"github.com/bwmarrin/snowflake"
 	"github.com/go-redis/redis/v7"
+=======
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 )
 
 // Engine session管理引擎
@@ -47,6 +53,8 @@ type Config struct {
 func NewEngine(config Config) (*Engine, error) {
 	// 实例化一个管理器
 	var engine Engine
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// 判断配置是否正确
 	if config.CookieName == "" {
@@ -69,7 +77,7 @@ func NewEngine(config Config) (*Engine, error) {
 		DB:       config.RedisDB,
 		Password: config.RedisPassword,
 	})
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(ctx).Err(); err != nil {
 		return nil, err
 	}
 
@@ -87,10 +95,19 @@ func NewEngine(config Config) (*Engine, error) {
 }
 
 // Use 使用session，检查sessionID是否存在，如果不存在则创建一个新的并写入到cookie
+<<<<<<< HEAD
 func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
 	var (
 		sess        Session
 		cookieValid = true
+=======
+func (this *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
+	var (
+		sess        Session
+		cookieValid = true
+		sidValue    string
+		sid         string
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 	)
 
 	// 从cookie中获得sessionID
@@ -101,20 +118,32 @@ func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session
 
 	// 如果cookie中的sessionID有效
 	if cookieValid {
+<<<<<<< HEAD
 		// 将cookie中的cid解码成sid
 		sid, err := decodeStorageID(cookieObj.Value, engine.config.Key)
+=======
+		// 将cookie中的值解码
+		sid, err = decodeSID(cookieObj.Value, this.config.Key)
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 		if err != nil {
 			return nil, err
 		}
 		sess.CookieID = cookieObj.Value
 		sess.StorageID = engine.config.RedisKeyPrefix + ":" + sid
 	} else {
+<<<<<<< HEAD
 		// 如果cookies中的sessionID无效
 		// 生成种子id
 		seedID := engine.seedIDNode.Generate().String() + strconv.FormatUint(uint64(rand.New(rand.NewSource(rand.Int63n(time.Now().UnixNano()))).Uint32()), 10)
 		// 用种子ID编码成cid
 		cid, err := encodeByBytes(strToByte(engine.config.Key), strToByte(seedID))
 		if err != nil {
+=======
+		// 生成一个uuid并赋值给session对象
+		sess.ID = uuid.New().String()
+		// 将uuid结合key加密成sid
+		if sidValue, err = encodeByBytes(strToByte(this.config.Key), strToByte(sess.ID)); err != nil {
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 			return nil, err
 		}
 		sess.CookieID = cid
@@ -139,7 +168,21 @@ func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session
 }
 
 // 更新session的空闲时间
+<<<<<<< HEAD
 func (engine *Engine) UpdateIdleTime(cid, sid string, resp http.ResponseWriter) error {
+=======
+func (this *Engine) UpdateIdleTime(req *http.Request, resp http.ResponseWriter) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// 从cookie中获得sessionID
+	cookieObj, err := req.Cookie(this.config.CookieName)
+	if err != nil || cookieObj == nil {
+		return nil // nolint:nilerr
+	} else if cookieObj.Value == "" {
+		return nil
+	}
+
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 	// 更新cookie的超时时间
 	http.SetCookie(resp, &http.Cookie{
 		Name:     engine.config.CookieName,
@@ -152,7 +195,17 @@ func (engine *Engine) UpdateIdleTime(cid, sid string, resp http.ResponseWriter) 
 		HttpOnly: engine.config.HttpOnly,
 	})
 
+<<<<<<< HEAD
 	return redisClient.ExpireAt(sid, time.Now().Add(engine.config.IdleTime)).Err()
+=======
+	// 将cookie中的值解码
+	sid, err := decodeSID(cookieObj.Value, this.config.Key)
+	if err != nil {
+		return err
+	}
+	// 更新redis的超时时间
+	return redisClient.ExpireAt(ctx, this.config.RedisKeyPrefix+":"+sid, time.Now().Add(this.config.IdleTime)).Err()
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 }
 
 // 解码得到storage id
@@ -172,10 +225,12 @@ func decodeStorageID(hexStr, key string) (string, error) {
 
 // 清除指定请求的所有会话数据，包含redis数据和cookie中的sessionID
 func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	// 从cookie中获得sessionID
 	cookieObj, err := req.Cookie(engine.config.CookieName)
 	if err != nil || cookieObj == nil {
-		return nil
+		return nil // nolint:nilerr
 	} else if cookieObj.Value == "" {
 		return nil
 	}
@@ -185,7 +240,11 @@ func (engine *Engine) ClearAll(req *http.Request, resp http.ResponseWriter) erro
 		return err
 	}
 	// 清除redis中的数据
+<<<<<<< HEAD
 	if err = redisClient.Del(engine.config.RedisKeyPrefix + ":" + sid).Err(); err != nil {
+=======
+	if err = redisClient.Del(ctx, sid).Err(); err != nil {
+>>>>>>> 8628f19 (为兼容go-redis/v8更新)
 		return err
 	}
 	// 清除cookie
