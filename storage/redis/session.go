@@ -38,7 +38,7 @@ func (rs *Storage) Delete(id, key string) (err error) {
 		return
 	}
 	if count < 1 {
-		return errors.New("操作失败")
+		return errors.New("delete操作失败")
 	}
 	return
 }
@@ -55,34 +55,27 @@ func (rs *Storage) Put(id, key string, value string) (err error) {
 		return
 	}
 	if count < 1 {
-		return errors.New("操作失败")
+		return errors.New("put操作失败")
 	}
 	return
 }
 
 func (rs *Storage) Update(id, key string, value string) (err error) {
-	var (
-		result bool
-		count  int64
-	)
+	var result bool
 	if err = rs.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	result, err = rs.redisClient.HExists(ctx, id, key).Result()
-	if err != nil {
+	if result, err = rs.redisClient.HExists(ctx, rs.config.Prefix+":"+id, key).Result(); err != nil {
 		return
 	}
 	if !result {
-		return errors.New("key不存在")
+		return errors.New("nil")
 	}
-	count, err = rs.redisClient.HSet(ctx, rs.config.Prefix+":"+id, key, value).Result()
+	err = rs.redisClient.HSet(ctx, rs.config.Prefix+":"+id, key, value).Err()
 	if err != nil {
 		return
-	}
-	if count < 1 {
-		return errors.New("操作失败")
 	}
 	return
 }
@@ -130,7 +123,7 @@ func (rs *Storage) Destroy(id string) (err error) {
 		return
 	}
 	if count < 1 {
-		return errors.New("操作失败")
+		return errors.New("destroy操作失败")
 	}
 	return
 }
