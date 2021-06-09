@@ -71,7 +71,7 @@ func main() {
 
 // 创建session引擎
 func newEngine() error {
-	var (
+    var (
 		err     error
 		storage sessions.Storage
 	)
@@ -82,9 +82,9 @@ func newEngine() error {
 		Username: "",           // redis 6支持的用户名
 		Password: "",           // redis的密码
 		DB: 0,                  // redis的库
-    })
+	})
 	if err != nil {
-        return err
+		return err
 	}
 	// 创建session引擎
 	engine, err = sessions.New(&sessions.Config{
