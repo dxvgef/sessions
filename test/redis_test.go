@@ -133,27 +133,29 @@ func testPut(t *testing.T) {
 func regGet(resp http.ResponseWriter, req *http.Request) {
 	var (
 		sess               *sessions.Session
-		username, password string
+		username, password sessions.Result
 	)
 	sess, err = engine.Use(req, resp)
 	if err != nil {
 		tLog.Println(err)
 		return
 	}
-	username, err = sess.Get("username")
-	if err != nil {
-		if err.Error() != "nil" {
-			tLog.Println(err)
+	username = sess.Get("username")
+	if username.Err() != nil {
+		if username.Err().Error() != "nil" {
+			tLog.Println(username.Err())
 		}
 	}
-	tLog.Println("username:", username)
-	password, err = sess.Get("password")
-	if err != nil {
-		if err.Error() != "nil" {
-			tLog.Println(err)
+	usernameVal, _ := username.String()
+	tLog.Println("username:", usernameVal)
+	password = sess.Get("password")
+	if password.Err() != nil {
+		if password.Err().Error() != "nil" {
+			tLog.Println(password.Err())
 		}
 	}
-	tLog.Println("password:", password)
+	passwordVal, _ := password.String()
+	tLog.Println("password:", passwordVal)
 }
 
 func testGet(t *testing.T) {

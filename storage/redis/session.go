@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dxvgef/sessions"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -78,8 +79,10 @@ func (rs *Storage) Update(id, key string, value string) (err error) {
 	return
 }
 
-func (rs *Storage) Get(id, key string) (value string, err error) {
-	if err = rs.Connect(); err != nil {
+func (rs *Storage) Get(id, key string) (result sessions.Result) {
+	var value string
+	err := rs.Connect()
+	if err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -88,10 +91,9 @@ func (rs *Storage) Get(id, key string) (value string, err error) {
 	if err != nil {
 		if err.Error() == redis.Nil.Error() {
 			err = errors.New("nil")
-			return
 		}
 	}
-	return
+	return sessions.MakeResult(value, err)
 }
 
 func (rs *Storage) Refresh(id string, expires time.Time) (err error) {

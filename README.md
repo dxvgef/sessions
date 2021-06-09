@@ -58,7 +58,7 @@ func main() {
 			return result.Err()
 		}
 		ctx.ResponseWriter.WriteHeader(200)
-		ctx.ResponseWriter.Write([]byte(result.String()))
+		ctx.ResponseWriter.Write(result.Bytes())
 
 		return nil
 	})

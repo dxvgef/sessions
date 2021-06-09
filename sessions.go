@@ -46,11 +46,12 @@ func (sess *Session) Put(key string, value string) (err error) {
 }
 
 // 从会话中读取一个键值
-func (sess *Session) Get(key string) (value string, err error) {
-	if value, err = sess.engine.storage.Get(sess.id, key); err != nil {
+func (sess *Session) Get(key string) (result Result) {
+	result = sess.engine.storage.Get(sess.id, key)
+	if result.Err() != nil {
 		return
 	}
-	err = sess.Refresh()
+	result.err = sess.Refresh()
 	return
 }
 
