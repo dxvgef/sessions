@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	tLog     = log.Default()
 	err      error
 	redisCfg = redis.Config{
 		Prefix: "session_test",
@@ -24,20 +25,20 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	log.SetFlags(log.Lshortfile)
+	tLog.SetFlags(log.Ltime | log.Lshortfile)
 
 	var storage sessions.Storage
 	// 创建引擎
 	storage, err = redis.New(&redisCfg)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	engine, err = sessions.New(&sessions.Config{
 		IdleTimeout: 20,
 	}, storage)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 
@@ -55,23 +56,14 @@ func TestMain(m *testing.M) {
 
 func TestAll(t *testing.T) {
 	t.Run("testAdd", testAdd)
-	time.Sleep(2 * time.Second)
 	t.Run("testGet", testGet)
-	time.Sleep(2 * time.Second)
 	t.Run("testPut", testPut)
-	time.Sleep(2 * time.Second)
 	t.Run("testGet", testGet)
-	time.Sleep(2 * time.Second)
 	t.Run("testUpdate", testUpdate)
-	time.Sleep(2 * time.Second)
 	t.Run("testGet", testGet)
-	time.Sleep(2 * time.Second)
 	t.Run("testDelete", testDelete)
-	time.Sleep(2 * time.Second)
 	t.Run("testGet", testGet)
-	time.Sleep(2 * time.Second)
 	t.Run("testDestroy", testDestroy)
-	time.Sleep(2 * time.Second)
 	t.Run("testGet", testGet)
 }
 
@@ -79,11 +71,11 @@ func regAdd(resp http.ResponseWriter, req *http.Request) {
 	var sess *sessions.Session
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	if err = sess.Add("username", "dxvgef"); err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	sessionID = sess.GetID()
@@ -107,11 +99,11 @@ func regPut(resp http.ResponseWriter, req *http.Request) {
 	var sess *sessions.Session
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	if err = sess.Put("password", "123456"); err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 }
@@ -141,28 +133,29 @@ func testPut(t *testing.T) {
 func regGet(resp http.ResponseWriter, req *http.Request) {
 	var (
 		sess               *sessions.Session
-		username, password sessions.Result
+		username, password string
 	)
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
-	username = sess.Get("username")
-	if username.Err != nil {
-		if username.Err.Error() != "nil" {
-			log.Println(username.Err)
+	username, err = sess.Get("username")
+	if err != nil {
+		if err.Error() != "nil" {
+			tLog.Println(err)
 		}
 	}
-	log.Println("username:", username.Value)
-	password = sess.Get("password")
-	if password.Err != nil {
-		if password.Err.Error() != "nil" {
-			log.Println(password.Err)
+	tLog.Println("username:", username)
+	password, err = sess.Get("password")
+	if err != nil {
+		if err.Error() != "nil" {
+			tLog.Println(err)
 		}
 	}
-	log.Println("password:", password.Value)
+	tLog.Println("password:", password)
 }
+
 func testGet(t *testing.T) {
 	var (
 		req  *http.Request
@@ -189,11 +182,11 @@ func regUpdate(resp http.ResponseWriter, req *http.Request) {
 	var sess *sessions.Session
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	if err = sess.Update("password", "abcdefg"); err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 }
@@ -225,11 +218,11 @@ func regDelete(resp http.ResponseWriter, req *http.Request) {
 	var sess *sessions.Session
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	if err = sess.Delete("username"); err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 }
@@ -261,11 +254,11 @@ func regDestroy(resp http.ResponseWriter, req *http.Request) {
 	var sess *sessions.Session
 	sess, err = engine.Use(req, resp)
 	if err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 	if err = sess.Destroy(); err != nil {
-		log.Println(err)
+		tLog.Println(err)
 		return
 	}
 }
