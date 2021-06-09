@@ -13,17 +13,6 @@ type Session struct {
 	resp   http.ResponseWriter
 }
 
-// 存储器接口
-type Storage interface {
-	Add(id, key string, value string) error           // 添加k/v，如果key存在则报错
-	Delete(id, key string) error                      // 删除k
-	Put(id, key string, value string) error           // 创建或更新
-	Update(id, key string, value string) error        // 更新k/v，如果key不存在则报错
-	Get(id, key string) (result Result)               // 获取key
-	Refresh(id string, expires time.Time) (err error) // 刷新生命周期
-	Destroy(id string) (err error)                    // 销毁会话
-}
-
 // 在会话中设置一个键值，如果键存在则返回错误
 func (sess *Session) Add(key string, value string) (err error) {
 	if err = sess.engine.storage.Add(sess.id, key, value); err != nil {

@@ -18,7 +18,7 @@ var (
 	redisCfg = redis.Config{
 		Prefix: "session_test",
 	}
-	engine     sessions.Engine
+	engine     *sessions.Engine
 	testServer http.ServeMux
 	sessionID  string
 )

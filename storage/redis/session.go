@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/dxvgef/sessions"
@@ -105,7 +104,6 @@ func (rs *Storage) Refresh(id string, expires time.Time) (err error) {
 	defer cancel()
 	err = rs.redisClient.ExpireAt(ctx, rs.config.Prefix+":"+id, expires).Err()
 	if err != nil {
-		log.Println(err)
 		return
 	}
 	return

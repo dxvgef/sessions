@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"path"
+	"time"
 
 	"github.com/rs/xid"
 )
@@ -24,8 +25,19 @@ type Engine struct {
 	storage Storage // 存储器实例
 }
 
+// 存储器接口
+type Storage interface {
+	Add(id, key string, value string) error           // 添加k/v，如果key存在则报错
+	Delete(id, key string) error                      // 删除k
+	Put(id, key string, value string) error           // 创建或更新
+	Update(id, key string, value string) error        // 更新k/v，如果key不存在则报错
+	Get(id, key string) (result Result)               // 获取key
+	Refresh(id string, expires time.Time) (err error) // 刷新生命周期
+	Destroy(id string) (err error)                    // 销毁会话
+}
+
 // 创建新的引擎
-func New(config *Config, storage Storage) (engine Engine, err error) {
+func New(config *Config, storage Storage) (engine *Engine, err error) {
 	if config == nil {
 		err = errors.New("必须定义Session的配置")
 		return
@@ -44,8 +56,10 @@ func New(config *Config, storage Storage) (engine Engine, err error) {
 	if config.IdleTimeout == 0 {
 		config.IdleTimeout = 20 * 60
 	}
-	engine.config = config
-	engine.storage = storage
+	engine = &Engine{
+		config:  config,
+		storage: storage,
+	}
 	return
 }
 
