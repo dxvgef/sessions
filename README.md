@@ -20,7 +20,7 @@ import (
 var engine *sessions.Engine
 
 func main() {
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(log.Ltime | log.Lshortfile)
 
 	// 创建session引擎
 	if err := newSessEngine(); err != nil {
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	app := tsing.New(&tsing.Config{})
-
+	
 	// 定义一个路由处理器用于写入session
 	app.Router.GET("/", func(ctx *tsing.Context) error {
 		// 启用session
