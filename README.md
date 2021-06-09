@@ -1,7 +1,7 @@
 # Sessions
 Go语言的Sessions库，已支持Redis存储器(go-redis/redis)，也可以自行实现`Storage`接口来扩展存储器。
 
-## 使用示例
+## 与`Tsing`框架结合使用的示例
 
 ```Go
 package main
