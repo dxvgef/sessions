@@ -93,7 +93,7 @@ func (rs *Storage) Get(id, key string) (result sessions.Result) {
 			err = errors.New("nil")
 		}
 	}
-	return sessions.MakeResult(value, err)
+	return sessions.NewResult(value, err)
 }
 
 func (rs *Storage) Refresh(id string, expires time.Time) (err error) {
