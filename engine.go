@@ -78,14 +78,12 @@ func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session
 	if req == nil || resp == nil {
 		return nil, errors.New("req和resp参数不为是空指针")
 	}
+
 	// 从cookie中读取session id
-	ck, err = req.Cookie("sessionid")
+	ck, err = req.Cookie(engine.config.Key)
 	if err == nil &&
 		ck != nil &&
-		ck.Value != "" &&
-		ck.Domain == engine.config.Domain &&
-		ck.Path == engine.config.Path &&
-		ck.Name == engine.config.Key {
+		ck.Value != "" {
 		hasKey = true
 	}
 
