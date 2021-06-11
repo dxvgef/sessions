@@ -16,32 +16,32 @@ func NewResult(value string, err error) Result {
 	}
 }
 
-func (r *Result) Err() error {
+func (r Result) Err() error {
 	return r.err
 }
 
-func (r *Result) String() (string, error) {
+func (r Result) String() (string, error) {
 	if r.err != nil {
 		return "", r.err
 	}
 	return r.value, r.err
 }
 
-func (r *Result) Bytes() ([]byte, error) {
+func (r Result) Bytes() ([]byte, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
 	return stringToBytes(r.value), r.err
 }
 
-func (r *Result) Int() (int, error) {
+func (r Result) Int() (int, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
 	return strconv.Atoi(r.value)
 }
 
-func (r *Result) Int8() (int8, error) {
+func (r Result) Int8() (int8, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -52,7 +52,7 @@ func (r *Result) Int8() (int8, error) {
 	return int8(value), nil
 }
 
-func (r *Result) Int16() (int16, error) {
+func (r Result) Int16() (int16, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -63,7 +63,7 @@ func (r *Result) Int16() (int16, error) {
 	return int16(value), nil
 }
 
-func (r *Result) Int32() (int32, error) {
+func (r Result) Int32() (int32, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -74,14 +74,14 @@ func (r *Result) Int32() (int32, error) {
 	return int32(value), nil
 }
 
-func (r *Result) Int64() (int64, error) {
+func (r Result) Int64() (int64, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
 	return strconv.ParseInt(r.value, 10, 64)
 }
 
-func (r *Result) Uint8() (uint8, error) {
+func (r Result) Uint8() (uint8, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -92,7 +92,7 @@ func (r *Result) Uint8() (uint8, error) {
 	return uint8(value), nil
 }
 
-func (r *Result) Uint16() (uint16, error) {
+func (r Result) Uint16() (uint16, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -103,7 +103,7 @@ func (r *Result) Uint16() (uint16, error) {
 	return uint16(value), nil
 }
 
-func (r *Result) Uint32() (uint32, error) {
+func (r Result) Uint32() (uint32, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -114,14 +114,14 @@ func (r *Result) Uint32() (uint32, error) {
 	return uint32(value), nil
 }
 
-func (r *Result) Uint64() (uint64, error) {
+func (r Result) Uint64() (uint64, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
 	return strconv.ParseUint(r.value, 10, 64)
 }
 
-func (r *Result) Float32() (float32, error) {
+func (r Result) Float32() (float32, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -132,14 +132,14 @@ func (r *Result) Float32() (float32, error) {
 	return float32(value), nil
 }
 
-func (r *Result) Float64() (float64, error) {
+func (r Result) Float64() (float64, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
 	return strconv.ParseFloat(r.value, 64)
 }
 
-func (r *Result) Bool() (bool, error) {
+func (r Result) Bool() (bool, error) {
 	if r.err != nil {
 		return false, r.err
 	}
