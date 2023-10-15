@@ -9,14 +9,14 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (rs *Storage) Add(id, key string, value string) (err error) {
+func (stg *Storage) Add(id, key string, value string) (err error) {
 	var result bool
-	if err = rs.Connect(); err != nil {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	result, err = rs.redisClient.HSetNX(ctx, rs.config.Prefix+":"+id, key, value).Result()
+	result, err = stg.redisClient.HSetNX(ctx, stg.config.Prefix+":"+id, key, value).Result()
 	if err != nil {
 		return
 	}
@@ -26,51 +26,54 @@ func (rs *Storage) Add(id, key string, value string) (err error) {
 	return
 }
 
-func (rs *Storage) Delete(id, key string) (err error) {
-	if err = rs.Connect(); err != nil {
+func (stg *Storage) Delete(id, key string) (err error) {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = rs.redisClient.HDel(ctx, rs.config.Prefix+":"+id, key).Result()
+	_, err = stg.redisClient.HDel(ctx, stg.config.Prefix+":"+id, key).Result()
 	return
 }
 
-func (rs *Storage) Put(id, key string, value string) (err error) {
-	if err = rs.Connect(); err != nil {
+// Put 写入session中的值
+func (stg *Storage) Put(id, key string, value string) (err error) {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = rs.redisClient.HSet(ctx, rs.config.Prefix+":"+id, key, value).Result()
+	_, err = stg.redisClient.HSet(ctx, stg.config.Prefix+":"+id, key, value).Result()
 	return
 }
 
-func (rs *Storage) Update(id, key string, value string) (err error) {
+// Update 更新session中的值
+func (stg *Storage) Update(id, key string, value string) (err error) {
 	var result bool
-	if err = rs.Connect(); err != nil {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if result, err = rs.redisClient.HExists(ctx, rs.config.Prefix+":"+id, key).Result(); err != nil {
+	if result, err = stg.redisClient.HExists(ctx, stg.config.Prefix+":"+id, key).Result(); err != nil {
 		return
 	}
 	if !result {
 		return errors.New("nil")
 	}
-	return rs.redisClient.HSet(ctx, rs.config.Prefix+":"+id, key, value).Err()
+	return stg.redisClient.HSet(ctx, stg.config.Prefix+":"+id, key, value).Err()
 }
 
-func (rs *Storage) Get(id, key string) (result sessions.Result) {
+// Get 获取session中的值
+func (stg *Storage) Get(id, key string) (result sessions.Result) {
 	var value string
-	err := rs.Connect()
+	err := stg.Connect()
 	if err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	value, err = rs.redisClient.HGet(ctx, rs.config.Prefix+":"+id, key).Result()
+	value, err = stg.redisClient.HGet(ctx, stg.config.Prefix+":"+id, key).Result()
 	if err != nil {
 		if err.Error() == redis.Nil.Error() {
 			err = errors.New("nil")
@@ -79,21 +82,23 @@ func (rs *Storage) Get(id, key string) (result sessions.Result) {
 	return sessions.NewResult(value, err)
 }
 
-func (rs *Storage) Refresh(id string, expires time.Time) (err error) {
-	if err = rs.Connect(); err != nil {
+// Refresh 刷新session生命周期
+func (stg *Storage) Refresh(id string, expires time.Time) (err error) {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return rs.redisClient.ExpireAt(ctx, rs.config.Prefix+":"+id, expires).Err()
+	return stg.redisClient.ExpireAt(ctx, stg.config.Prefix+":"+id, expires).Err()
 }
 
-func (rs *Storage) Destroy(id string) (err error) {
-	if err = rs.Connect(); err != nil {
+// Destroy 销毁Session
+func (stg *Storage) Destroy(id string) (err error) {
+	if err = stg.Connect(); err != nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = rs.redisClient.Del(ctx, rs.config.Prefix+":"+id).Result()
+	_, err = stg.redisClient.Del(ctx, stg.config.Prefix+":"+id).Result()
 	return
 }
