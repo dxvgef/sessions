@@ -36,19 +36,19 @@ func New(config *Config) (*Storage, error) {
 }
 
 // 连接Redis
-func (rs *Storage) Connect() (err error) {
-	if rs.redisClient != nil {
+func (stg *Storage) Connect() (err error) {
+	if stg.redisClient != nil {
 		return
 	}
-	rs.redisClient = redis.NewClient(&redis.Options{
-		TLSConfig: rs.config.TLS,
-		Network:   rs.config.Network,
-		Addr:      rs.config.Addr,
-		Username:  rs.config.Username,
-		DB:        int(rs.config.DB),
-		Password:  rs.config.Password,
+	stg.redisClient = redis.NewClient(&redis.Options{
+		TLSConfig: stg.config.TLS,
+		Network:   stg.config.Network,
+		Addr:      stg.config.Addr,
+		Username:  stg.config.Username,
+		DB:        int(stg.config.DB),
+		Password:  stg.config.Password,
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	return rs.redisClient.Ping(ctx).Err()
+	return stg.redisClient.Ping(ctx).Err()
 }
