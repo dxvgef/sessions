@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dxvgef/sessions"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 func (rs *Storage) Add(id, key string, value string) (err error) {
