@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// 存储器本置
+// Config 存储器本置
 type Config struct {
 	TLS      *tls.Config // TLS配置
 	Network  string      // TCP或者UNIX，默认TCP
@@ -19,13 +19,13 @@ type Config struct {
 	Prefix   string      // 键名前缀
 }
 
-// Redis存储器结构
+// Storage Redis存储器结构
 type Storage struct {
 	config      *Config       // 存储器配置
 	redisClient *redis.Client // Redis客户端实例
 }
 
-// 创建存储器
+// New 创建存储器
 func New(config *Config) (*Storage, error) {
 	if config.Addr == "" {
 		config.Addr = "127.0.0.1:6379"
@@ -35,7 +35,7 @@ func New(config *Config) (*Storage, error) {
 	}, nil
 }
 
-// 连接Redis
+// Connect 连接Redis
 func (stg *Storage) Connect() (err error) {
 	if stg.redisClient != nil {
 		return

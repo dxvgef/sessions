@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// 会话
+// Session 会话
 type Session struct {
 	id     string
 	engine *Engine
@@ -13,7 +13,7 @@ type Session struct {
 	resp   http.ResponseWriter
 }
 
-// 在会话中设置一个键值，如果键存在则返回错误
+// Add 在会话中设置一个键值，如果键存在则返回错误
 func (sess *Session) Add(key string, value string) (err error) {
 	if err = sess.engine.storage.Add(sess.id, key, value); err != nil {
 		return
@@ -21,7 +21,7 @@ func (sess *Session) Add(key string, value string) (err error) {
 	return sess.Refresh()
 }
 
-// 在会话中删除一个键值
+// Delete 在会话中删除一个键值
 func (sess *Session) Delete(key string) (err error) {
 	if err = sess.engine.storage.Delete(sess.id, key); err != nil {
 		return
@@ -29,7 +29,7 @@ func (sess *Session) Delete(key string) (err error) {
 	return sess.Refresh()
 }
 
-// 在会话中修改一个键值，如果键不存在则返回错误
+// Update 在会话中修改一个键值，如果键不存在则返回错误
 func (sess *Session) Update(key string, value string) (err error) {
 	if err = sess.engine.storage.Update(sess.id, key, value); err != nil {
 		return
@@ -37,7 +37,7 @@ func (sess *Session) Update(key string, value string) (err error) {
 	return sess.Refresh()
 }
 
-// 在会话中设置一个键值，如果键不存在则创建，存在则替换
+// Put 在会话中设置一个键值，如果键不存在则创建，存在则替换
 func (sess *Session) Put(key string, value string) (err error) {
 	if err = sess.engine.storage.Put(sess.id, key, value); err != nil {
 		return
@@ -45,7 +45,7 @@ func (sess *Session) Put(key string, value string) (err error) {
 	return sess.Refresh()
 }
 
-// 从会话中读取一个键值
+// Get 从会话中读取一个键值
 func (sess *Session) Get(key string) (result Result) {
 	result = sess.engine.storage.Get(sess.id, key)
 	if result.Err() != nil {
@@ -55,7 +55,7 @@ func (sess *Session) Get(key string) (result Result) {
 	return
 }
 
-// 刷新会话，延长生命周期
+// Refresh 刷新会话，延长生命周期
 func (sess *Session) Refresh() (err error) {
 	expires := time.Now().Add(time.Duration(int(sess.engine.config.IdleTimeout)) * time.Second)
 	if sess.resp.Header().Get("Set-Cookie") == "" {
@@ -73,7 +73,7 @@ func (sess *Session) Refresh() (err error) {
 	return sess.engine.storage.Refresh(sess.id, expires)
 }
 
-// 销毁会话
+// Destroy 销毁会话
 func (sess *Session) Destroy() (err error) {
 	if err = sess.engine.storage.Destroy(sess.id); err != nil {
 		return
@@ -87,17 +87,17 @@ func (sess *Session) Destroy() (err error) {
 	return nil
 }
 
-// 获取会话的ID
+// GetID 获取会话的ID
 func (sess *Session) GetID() string {
 	return sess.id
 }
 
-// 获取会话的http.Request
+// GetRequest 获取会话的http.Request
 func (sess *Session) GetRequest() *http.Request {
 	return sess.req
 }
 
-// 获取会话的http.ResponseWriter
+// GetResponseWriter 获取会话的http.ResponseWriter
 func (sess *Session) GetResponseWriter() http.ResponseWriter {
 	return sess.resp
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Add 添加键值到指定的session id
 func (stg *Storage) Add(id, key string, value string) (err error) {
 	var result bool
 	if err = stg.Connect(); err != nil {
@@ -26,6 +27,7 @@ func (stg *Storage) Add(id, key string, value string) (err error) {
 	return
 }
 
+// Delete 从session中删除指定的键
 func (stg *Storage) Delete(id, key string) (err error) {
 	if err = stg.Connect(); err != nil {
 		return
