@@ -2,7 +2,7 @@
 Go语言的Sessions库。使用`Storage`接口来实现数据存储层的抽象化，可通过实现该接口来将数据存储到Memcached、Redis、LevelDB、RocksDB、MySQL等数据库。还支持值类型转换的链式方法，有助于减少代码量。
 
 ### 已内置的数据存储器：
-- [x] Redis（支持v6）
+- [x] Redis（支持 > v6）
 
 ### 与`Tsing`框架结合使用的示例
 
