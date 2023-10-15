@@ -6,26 +6,27 @@ import (
 	"path"
 	"time"
 
-	"github.com/rs/xid"
+	"github.com/google/uuid"
 )
 
-// 管理器配置
+// Config 管理器配置
 type Config struct {
-	Key         string // Session ID的Cookie键名
-	Domain      string // Session ID的cookie作用域名
-	Path        string // Session ID的cookie作用路径
-	IdleTimeout uint   // 空闲超时（秒）
-	HTTPOnly    bool   // 仅用于HTTP传输（无法被JS脚本读取）
-	Secure      bool   // 启用安全，使Session仅在HTTPS下才会有效
+	Key         string        // Session ID的Cookie键名
+	GenerateID  func() string // 生成 Session ID的值
+	Domain      string        // Session ID的cookie作用域名
+	Path        string        // Session ID的cookie作用路径
+	IdleTimeout uint          // 空闲超时（秒）
+	HTTPOnly    bool          // 仅用于HTTP传输（无法被JS脚本读取）
+	Secure      bool          // 启用安全，使Session仅在HTTPS下才会有效
 }
 
-// 引擎
+// Engine 引擎
 type Engine struct {
 	config  *Config // 管理器配置
 	storage Storage // 存储器实例
 }
 
-// 存储器接口
+// Storage 存储器接口
 type Storage interface {
 	Add(id, key string, value string) error           // 添加k/v，如果key存在则报错
 	Delete(id, key string) error                      // 删除k
@@ -36,7 +37,7 @@ type Storage interface {
 	Destroy(id string) (err error)                    // 销毁会话
 }
 
-// 创建新的引擎
+// New 创建新的引擎
 func New(config *Config, storage Storage) (engine *Engine, err error) {
 	if config == nil {
 		err = errors.New("必须定义Session的配置")
@@ -44,6 +45,10 @@ func New(config *Config, storage Storage) (engine *Engine, err error) {
 	}
 	if storage == nil {
 		err = errors.New("必须定义存储器")
+		return
+	}
+	if config.GenerateID != nil && config.GenerateID() == "" {
+		err = errors.New("ID生成回调函数返回值不能为空")
 		return
 	}
 	if config.Key == "" {
@@ -63,17 +68,18 @@ func New(config *Config, storage Storage) (engine *Engine, err error) {
 	return
 }
 
-// 获取引擎的配置
+// GetConfig 获取引擎的配置
 func (engine *Engine) GetConfig() Config {
 	return *engine.config
 }
 
-// 使用会话
+// Use 使用会话
 func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session, error) {
 	var (
 		err    error
 		hasKey bool
 		ck     *http.Cookie
+		id     uuid.UUID
 	)
 	if req == nil || resp == nil {
 		return nil, errors.New("req和resp参数不为是空指针")
@@ -97,6 +103,16 @@ func (engine *Engine) Use(req *http.Request, resp http.ResponseWriter) (*Session
 		sess.id = ck.Value
 		return &sess, nil
 	}
-	sess.id = xid.New().String() + randStr(4)
+	if engine.config.GenerateID != nil {
+		// 执行回调函数生成session id
+		sess.id = engine.config.GenerateID()
+	} else {
+		// 使用UUID V4生成session id
+		id, err = uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+		sess.id = id.String()
+	}
 	return &sess, nil
 }
